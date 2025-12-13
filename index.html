@@ -26,17 +26,18 @@
             aspect-ratio: 2.5 / 3.5;
             background-color: #2d3748;
             border: 2px dashed #4a5568;
-            border-radius: 4px; /* Smaller radius */
+            border-radius: 4px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             font-weight: bold;
-            font-size: clamp(0.7rem, 1.5vh, 1rem); /* Smaller font */
+            font-size: clamp(0.7rem, 1.5vh, 1rem);
             cursor: pointer;
             transition: all 0.1s;
             position: relative;
             line-height: 1;
+            min-width: 0; /* Important for flex shrinking */
         }
         .card-slot.active {
             border-color: #f6ad55;
@@ -62,7 +63,7 @@
             flex: 1 1 auto;
             display: flex;
             flex-direction: column;
-            justify-content: center; /* Center vertically */
+            justify-content: center;
             padding: 0.5rem;
             background: rgba(20, 83, 45, 0.2);
             overflow-y: auto;
@@ -182,27 +183,20 @@
         </div>
     </div>
 
-    <!-- Table: Compact Layout -->
+    <!-- Table: Wide Gap Layout -->
     <div class="table-area">
         <div class="w-full max-w-4xl mx-auto flex flex-col gap-1 items-center">
             
-            <!-- Labels -->
-            <div class="flex w-full px-4 text-[10px] text-gray-400 font-bold max-w-lg">
-                <div style="width: 30%">HAND</div>
-                <div style="flex: 1"></div>
-                <div style="width: 60%">BOARD</div>
-            </div>
-
-            <!-- Cards Row (Smaller Height, Larger Gap) -->
-            <div class="flex gap-8 h-20 md:h-28 w-full max-w-lg px-2 justify-center">
+            <!-- Cards Row (Large Gap) -->
+            <div class="flex gap-16 h-20 md:h-28 w-full px-4 justify-center">
                 <!-- Hole Cards (2) -->
-                <div class="flex gap-2 w-[30%]">
+                <div class="flex gap-2 flex-1 max-w-[120px]">
                     <div class="card-slot flex-1" id="hole-1" onclick="selectSlot('hole-1')"></div>
                     <div class="card-slot flex-1" id="hole-2" onclick="selectSlot('hole-2')"></div>
                 </div>
 
                 <!-- Board Cards (5) -->
-                <div class="flex gap-2 w-[70%]">
+                <div class="flex gap-2 flex-[2.5] max-w-[300px]">
                     <div class="card-slot flex-1" id="board-1" onclick="selectSlot('board-1')"></div>
                     <div class="card-slot flex-1" id="board-2" onclick="selectSlot('board-2')"></div>
                     <div class="card-slot flex-1" id="board-3" onclick="selectSlot('board-3')"></div>
@@ -210,9 +204,15 @@
                     <div class="card-slot flex-1" id="board-5" onclick="selectSlot('board-5')"></div>
                 </div>
             </div>
+            
+            <!-- Labels (Underneath for clarity or just rely on grouping) -->
+             <div class="flex gap-16 w-full px-4 justify-center text-[10px] text-gray-400 font-bold mt-1">
+                 <div class="flex-1 max-w-[120px] text-center">HAND</div>
+                 <div class="flex-[2.5] max-w-[300px] text-center">BOARD</div>
+             </div>
 
             <!-- Loading Indicator -->
-            <div class="h-6 flex justify-center items-center">
+            <div class="h-6 flex justify-center items-center mt-2">
                  <div id="loading" class="hidden text-yellow-400 text-sm animate-pulse font-mono">Simulating...</div>
             </div>
 
