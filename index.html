@@ -32,7 +32,7 @@
             align-items: center;
             justify-content: center;
             font-weight: bold;
-            font-size: clamp(1rem, 2.5vh, 1.5rem);
+            font-size: clamp(0.8rem, 2vh, 1.2rem); /* Slightly smaller for 7 in row */
             cursor: pointer;
             transition: all 0.1s;
             position: relative;
@@ -62,7 +62,7 @@
             flex: 1 1 auto;
             display: flex;
             flex-direction: column;
-            justify-content: space-evenly;
+            justify-content: center; /* Center vertically */
             padding: 0.5rem;
             background: rgba(20, 83, 45, 0.2);
             overflow-y: auto;
@@ -79,8 +79,6 @@
         }
 
         /* --- Picker Grids --- */
-        
-        /* Suit Picker: 2x2 Grid */
         .suit-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -101,14 +99,13 @@
         }
         .suit-btn:active { transform: scale(0.98); }
 
-        /* Rank Picker: 4 cols x 4 rows */
         .rank-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            grid-template-rows: repeat(4, 1fr);
+            display: flex;
+            flex-wrap: wrap;
             gap: 4px;
             height: 100%;
             width: 100%;
+            align-content: stretch;
         }
         .rank-btn {
             background: white;
@@ -120,6 +117,17 @@
             font-weight: bold;
             color: #1a202c;
             cursor: pointer;
+            flex-grow: 1; 
+            margin-bottom: 0;
+            box-sizing: border-box;
+        }
+        .rank-btn.width-third {
+            width: calc(33.333% - 4px); 
+            height: calc(25% - 4px); 
+        }
+        .rank-btn.width-quarter {
+            width: calc(25% - 4px);
+            height: calc(25% - 4px);
         }
         .rank-btn.disabled {
             opacity: 0.2;
@@ -128,13 +136,20 @@
         }
         .rank-btn:active { background: #e2e8f0; }
         
-        /* Selected Suit Indicator in Rank Picker */
         .rank-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 4px;
             height: 30px;
+        }
+
+        /* Separator for Hole/Board */
+        .separator {
+            width: 2px;
+            background-color: #4a5568;
+            margin: 0 4px;
+            border-radius: 1px;
         }
 
     </style>
@@ -175,28 +190,43 @@
         </div>
     </div>
 
-    <!-- Table -->
+    <!-- Table: Single Row Layout -->
     <div class="table-area">
-        <div class="w-full max-w-2xl mx-auto">
-            <div class="text-[10px] text-gray-400 mb-1 ml-1 font-bold">MY HAND</div>
-            <div class="grid grid-cols-7 gap-2"> 
-                <div class="card-slot col-span-1" id="hole-1" onclick="selectSlot('hole-1')"></div>
-                <div class="card-slot col-span-1" id="hole-2" onclick="selectSlot('hole-2')"></div>
-                <div class="col-span-5 flex items-center pl-2">
-                     <div id="loading" class="hidden text-yellow-400 text-sm animate-pulse font-mono">Simulating...</div>
+        <div class="w-full max-w-4xl mx-auto flex flex-col gap-1">
+            
+            <!-- Labels -->
+            <div class="flex px-1 text-[10px] text-gray-400 font-bold">
+                <div style="flex: 2">HAND</div>
+                <div style="width: 10px"></div>
+                <div style="flex: 5">BOARD</div>
+            </div>
+
+            <!-- Cards Row -->
+            <div class="flex gap-2 h-32 md:h-40">
+                <!-- Hole Cards (2) -->
+                <div class="flex gap-2 flex-1">
+                    <div class="card-slot flex-1" id="hole-1" onclick="selectSlot('hole-1')"></div>
+                    <div class="card-slot flex-1" id="hole-2" onclick="selectSlot('hole-2')"></div>
+                </div>
+
+                <!-- Separator -->
+                <div class="separator"></div>
+
+                <!-- Board Cards (5) -->
+                <div class="flex gap-2 flex-[2.5]">
+                    <div class="card-slot flex-1" id="board-1" onclick="selectSlot('board-1')"></div>
+                    <div class="card-slot flex-1" id="board-2" onclick="selectSlot('board-2')"></div>
+                    <div class="card-slot flex-1" id="board-3" onclick="selectSlot('board-3')"></div>
+                    <div class="card-slot flex-1" id="board-4" onclick="selectSlot('board-4')"></div>
+                    <div class="card-slot flex-1" id="board-5" onclick="selectSlot('board-5')"></div>
                 </div>
             </div>
-        </div>
 
-        <div class="w-full max-w-2xl mx-auto mt-2">
-            <div class="text-[10px] text-gray-400 mb-1 ml-1 font-bold">BOARD</div>
-            <div class="grid grid-cols-5 gap-2">
-                <div class="card-slot" id="board-1" onclick="selectSlot('board-1')"></div>
-                <div class="card-slot" id="board-2" onclick="selectSlot('board-2')"></div>
-                <div class="card-slot" id="board-3" onclick="selectSlot('board-3')"></div>
-                <div class="card-slot" id="board-4" onclick="selectSlot('board-4')"></div>
-                <div class="card-slot" id="board-5" onclick="selectSlot('board-5')"></div>
+            <!-- Loading Indicator -->
+            <div class="h-6 flex justify-center items-center">
+                 <div id="loading" class="hidden text-yellow-400 text-sm animate-pulse font-mono">Simulating...</div>
             </div>
+
         </div>
     </div>
 
@@ -372,7 +402,6 @@
                 container.appendChild(grid);
             } else {
                 // Show Rank Picker
-                // Header to go back
                 const header = document.createElement('div');
                 header.className = 'rank-header';
                 
@@ -386,7 +415,6 @@
                 `;
                 container.appendChild(header);
 
-                // Used cards check
                 const usedRanks = new Set();
                 [...state.hole, ...state.board].forEach(c => {
                     if(c && c.s === state.tempSuit) usedRanks.add(c.r);
@@ -394,13 +422,15 @@
 
                 const grid = document.createElement('div');
                 grid.className = 'rank-grid';
-                // Adjust grid height: container h - header h (30) - gap
                 grid.style.height = 'calc(100% - 34px)';
 
                 RANKS.forEach((rank, rIdx) => {
                     const btn = document.createElement('div');
                     const isUsed = usedRanks.has(rIdx);
-                    btn.className = `rank-btn suit-${suitChar} ${isUsed ? 'disabled' : ''}`;
+                    // Add layout classes
+                    const layoutClass = rIdx < 9 ? 'width-third' : 'width-quarter';
+
+                    btn.className = `rank-btn suit-${suitChar} ${layoutClass} ${isUsed ? 'disabled' : ''}`;
                     btn.innerHTML = rank;
                     btn.onclick = () => pickRank(rIdx);
                     grid.appendChild(btn);
