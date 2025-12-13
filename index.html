@@ -6,30 +6,40 @@
     <title>Poker Equity Calc</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        :root {
+            --picker-height: 40vh; /* Consistent height */
+        }
+
         body {
-            background-color: #1a202c; /* Gray 900 */
-            color: #e2e8f0; /* Gray 200 */
+            background-color: #1a202c;
+            color: #e2e8f0;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            touch-action: manipulation; /* Double tap zoom disable */
+            touch-action: manipulation;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
         
-        /* Custom Card Styles */
+        /* --- Card Styles --- */
         .card-slot {
             aspect-ratio: 2.5 / 3.5;
             background-color: #2d3748;
             border: 2px dashed #4a5568;
             border-radius: 6px;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             font-weight: bold;
-            font-size: 1.2rem;
+            font-size: clamp(1rem, 2.5vh, 1.5rem);
             cursor: pointer;
             transition: all 0.1s;
             position: relative;
+            line-height: 1;
         }
         .card-slot.active {
-            border-color: #f6ad55; /* Orange */
+            border-color: #f6ad55;
             box-shadow: 0 0 0 2px rgba(246, 173, 85, 0.5);
             background-color: #2d3748;
         }
@@ -41,41 +51,92 @@
         }
         
         /* 4-Color Deck */
-        .suit-s { color: #1a202c; } /* Spades Black */
-        .suit-h { color: #e53e3e; } /* Hearts Red */
-        .suit-d { color: #3182ce; } /* Diamonds Blue */
-        .suit-c { color: #38a169; } /* Clubs Green */
+        .suit-s { color: #1a202c; } 
+        .suit-h { color: #e53e3e; } 
+        .suit-d { color: #3182ce; } 
+        .suit-c { color: #38a169; } 
 
-        /* Picker Grid */
-        .picker-grid {
-            display: grid;
-            grid-template-columns: repeat(13, 1fr);
-            gap: 2px;
-            padding: 4px;
+        /* --- Layout Areas --- */
+        .header-area { flex: 0 0 auto; }
+        .table-area {
+            flex: 1 1 auto;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-evenly;
+            padding: 0.5rem;
+            background: rgba(20, 83, 45, 0.2);
+            overflow-y: auto;
+            min-height: 0;
         }
-        .picker-card {
-            aspect-ratio: 2.5/3.5;
+        .picker-area {
+            flex: 0 0 auto;
+            background-color: #2d3748;
+            border-top: 1px solid #4a5568;
+            padding: 8px;
+            height: var(--picker-height);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- Picker Grids --- */
+        
+        /* Suit Picker: 2x2 Grid */
+        .suit-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 8px;
+            height: 100%;
+            width: 100%;
+        }
+        .suit-btn {
+            background: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .suit-btn:active { transform: scale(0.98); }
+
+        /* Rank Picker: 4 cols x 4 rows */
+        .rank-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+            gap: 4px;
+            height: 100%;
+            width: 100%;
+        }
+        .rank-btn {
             background: white;
             border-radius: 4px;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
-            font-size: 0.8rem;
+            font-size: 1.5rem;
             font-weight: bold;
+            color: #1a202c;
             cursor: pointer;
         }
-        .picker-card.disabled {
+        .rank-btn.disabled {
             opacity: 0.2;
             pointer-events: none;
             background: #718096;
         }
+        .rank-btn:active { background: #e2e8f0; }
         
-        @media (max-width: 600px) {
-            .picker-grid {
-                grid-template-columns: repeat(7, 1fr); /* 2 rows per suit on mobile */
-            }
+        /* Selected Suit Indicator in Rank Picker */
+        .rank-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+            height: 30px;
         }
+
     </style>
 
     <!-- PWA Settings -->
@@ -87,55 +148,48 @@
         }
     </script>
 </head>
-<body class="h-screen flex flex-col overflow-hidden">
+<body>
 
-    <!-- Header / Stats -->
-    <div class="bg-gray-800 p-4 border-b border-gray-700 flex justify-between items-center shadow-md z-10">
-        <div>
-            <div class="text-xs text-gray-400 uppercase tracking-wider">Win Equity</div>
-            <div class="text-3xl font-bold text-green-400" id="win-rate">--%</div>
+    <!-- Header -->
+    <div class="header-area bg-gray-800 p-2 border-b border-gray-700 flex justify-between items-center shadow-md z-10">
+        <div class="flex flex-col">
+            <div class="text-[10px] text-gray-400 uppercase tracking-wider">Win Equity</div>
+            <div class="text-2xl font-bold text-gray-500" id="win-rate">--%</div>
         </div>
         <div class="text-right">
-            <div class="text-xs text-gray-400 uppercase tracking-wider">Tie</div>
-            <div class="text-xl font-bold text-gray-300" id="tie-rate">--%</div>
+            <div class="text-[10px] text-gray-400 uppercase tracking-wider">Tie</div>
+            <div class="text-lg font-bold text-gray-400" id="tie-rate">--%</div>
         </div>
-        <div class="flex flex-col items-end gap-1">
-            <button onclick="calculate()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-1 px-4 rounded text-sm shadow">
-                CALC
-            </button>
-            <button onclick="resetAll()" class="bg-red-900 hover:bg-red-800 text-red-200 text-xs py-1 px-2 rounded">
+        <div class="flex items-center gap-2">
+             <div class="flex items-center gap-1 bg-gray-700 rounded p-1 mr-2">
+                <button onclick="changeOpponents(-1)" class="w-8 h-8 flex items-center justify-center bg-gray-600 rounded hover:bg-gray-500 font-bold text-lg">-</button>
+                <div class="flex flex-col items-center px-1">
+                    <span id="opp-count" class="font-mono text-lg font-bold leading-none">1</span>
+                    <span class="text-[9px] text-gray-400 leading-none">OPP</span>
+                </div>
+                <button onclick="changeOpponents(1)" class="w-8 h-8 flex items-center justify-center bg-gray-600 rounded hover:bg-gray-500 font-bold text-lg">+</button>
+            </div>
+            <button onclick="resetAll()" class="bg-red-900 hover:bg-red-800 text-red-200 text-xs py-2 px-3 rounded font-bold">
                 RESET
             </button>
         </div>
     </div>
 
-    <!-- Main Table Area -->
-    <div class="flex-grow flex flex-col p-2 gap-4 overflow-y-auto bg-green-900/20">
-        
-        <!-- Opponents Control -->
-        <div class="flex justify-between items-center bg-gray-800 p-2 rounded-lg">
-            <span class="text-sm font-bold text-gray-300">Opponents (Random)</span>
-            <div class="flex items-center gap-3 bg-gray-700 rounded p-1">
-                <button onclick="changeOpponents(-1)" class="w-8 h-8 flex items-center justify-center bg-gray-600 rounded hover:bg-gray-500 font-bold">-</button>
-                <span id="opp-count" class="font-mono text-xl w-4 text-center">1</span>
-                <button onclick="changeOpponents(1)" class="w-8 h-8 flex items-center justify-center bg-gray-600 rounded hover:bg-gray-500 font-bold">+</button>
-            </div>
-        </div>
-
-        <!-- My Hand -->
-        <div>
-            <div class="text-xs text-gray-400 mb-1 ml-1">MY HAND</div>
-            <div class="grid grid-cols-5 gap-2">
+    <!-- Table -->
+    <div class="table-area">
+        <div class="w-full max-w-2xl mx-auto">
+            <div class="text-[10px] text-gray-400 mb-1 ml-1 font-bold">MY HAND</div>
+            <div class="grid grid-cols-7 gap-2"> 
                 <div class="card-slot col-span-1" id="hole-1" onclick="selectSlot('hole-1')"></div>
                 <div class="card-slot col-span-1" id="hole-2" onclick="selectSlot('hole-2')"></div>
-                <!-- Spacer -->
-                <div class="col-span-3"></div> 
+                <div class="col-span-5 flex items-center pl-2">
+                     <div id="loading" class="hidden text-yellow-400 text-sm animate-pulse font-mono">Simulating...</div>
+                </div>
             </div>
         </div>
 
-        <!-- Board -->
-        <div>
-            <div class="text-xs text-gray-400 mb-1 ml-1">BOARD (Flop / Turn / River)</div>
+        <div class="w-full max-w-2xl mx-auto mt-2">
+            <div class="text-[10px] text-gray-400 mb-1 ml-1 font-bold">BOARD</div>
             <div class="grid grid-cols-5 gap-2">
                 <div class="card-slot" id="board-1" onclick="selectSlot('board-1')"></div>
                 <div class="card-slot" id="board-2" onclick="selectSlot('board-2')"></div>
@@ -144,23 +198,18 @@
                 <div class="card-slot" id="board-5" onclick="selectSlot('board-5')"></div>
             </div>
         </div>
-        
-        <div id="loading" class="hidden text-center text-yellow-400 text-sm animate-pulse mt-2">
-            Simulating...
-        </div>
-
     </div>
 
-    <!-- Card Picker (Bottom Sheet) -->
-    <div class="bg-gray-800 border-t border-gray-700 p-1 safe-area-pb">
-        <div id="picker-grid" class="picker-grid">
-            <!-- Generated by JS -->
+    <!-- Picker -->
+    <div class="picker-area">
+        <div id="picker-container" class="h-full w-full">
+            <!-- Injected by JS -->
         </div>
     </div>
 
     <script>
         // --- Game Logic ---
-        const SUITS = ['s', 'h', 'd', 'c']; // Spades, Hearts, Diamonds, Clubs
+        const SUITS = ['s', 'h', 'd', 'c']; 
         const RANKS = ['2','3','4','5','6','7','8','9','T','J','Q','K','A'];
         const SYMBOLS = {'s':'♠', 'h':'♥', 'd':'♦', 'c':'♣'};
         
@@ -168,12 +217,11 @@
             opponents: 1,
             hole: [null, null],
             board: [null, null, null, null, null],
-            currentSlot: 'hole-1' // ID of currently selected slot
+            currentSlot: 'hole-1',
+            tempSuit: null // null = picking suit, 0-3 = picking rank
         };
 
-        // --- Evaluator (Compact & Fast) ---
-        // Ranks: 0(2)..12(A). Suits: 0..3
-        
+        // --- Evaluator (Compact) ---
         const R_STRAIGHT_FLUSH = 8000000;
         const R_QUADS          = 7000000;
         const R_FULL_HOUSE     = 6000000;
@@ -185,256 +233,215 @@
         const R_HIGH_CARD      = 0;
 
         function evaluate7Cards(cards) {
-            // cards: Array of {r:0-12, s:0-3}
             if (!cards || cards.length < 5) return 0;
-            
-            // Sort by rank descending
             cards.sort((a,b) => b.r - a.r);
-
-            // Flush Check
             let flushSuit = -1;
             const suitCounts = [0,0,0,0];
             for(let c of cards) suitCounts[c.s]++;
             for(let i=0; i<4; i++) if(suitCounts[i] >= 5) flushSuit = i;
-
             const flushCards = (flushSuit !== -1) ? cards.filter(c => c.s === flushSuit) : [];
 
-            // Straight Check (Returns rank of high card of straight, or -1)
             function getStraightHigh(cardList) {
-                // Unique ranks
                 let ranks = [...new Set(cardList.map(c => c.r))];
                 if (ranks.length < 5) return -1;
-                
-                // Check Ace low (A,5,4,3,2) -> ranks includes 12,3,2,1,0
                 let isAceLow = false;
-                if(ranks.includes(12) && ranks.includes(0) && ranks.includes(1) && ranks.includes(2) && ranks.includes(3)) {
-                   isAceLow = true;
-                }
-
-                // Check normal straights
+                if(ranks.includes(12) && ranks.includes(0) && ranks.includes(1) && ranks.includes(2) && ranks.includes(3)) isAceLow = true;
                 for (let i = 0; i <= ranks.length - 5; i++) {
                     if (ranks[i] - ranks[i+4] === 4) return ranks[i];
                 }
-                
-                if(isAceLow) {
-                    // If no higher straight found, return 5 high (rank 3)
-                    return 3; 
-                }
+                if(isAceLow) return 3; 
                 return -1;
             }
 
-            // 1. Straight Flush
             if (flushSuit !== -1) {
                 const sfHigh = getStraightHigh(flushCards);
                 if (sfHigh !== -1) return R_STRAIGHT_FLUSH + sfHigh;
             }
-
-            // 2. Quads
             const rankCounts = new Array(13).fill(0);
             for(let c of cards) rankCounts[c.r]++;
-            
             let quads = -1, trips = [], pairs = [];
             for(let r=12; r>=0; r--) {
                 if(rankCounts[r] === 4) quads = r;
                 else if(rankCounts[r] === 3) trips.push(r);
                 else if(rankCounts[r] === 2) pairs.push(r);
             }
-
             if (quads !== -1) {
-                // Kicker
                 let kicker = -1;
                 for(let c of cards) if(c.r !== quads) { kicker = c.r; break; }
                 return R_QUADS + (quads * 100) + kicker;
             }
-
-            // 3. Full House
             if (trips.length > 0) {
                 const bestTrip = trips[0];
                 let bestPair = -1;
-                if (trips.length > 1) bestPair = trips[1]; // 2 sets of trips, use lower as pair
+                if (trips.length > 1) bestPair = trips[1]; 
                 else if (pairs.length > 0) bestPair = pairs[0];
-                
                 if (bestPair !== -1) return R_FULL_HOUSE + (bestTrip * 100) + bestPair;
             }
-
-            // 4. Flush
             if (flushSuit !== -1) {
-                // Top 5 cards
                 let score = 0;
                 for(let i=0; i<5; i++) score += flushCards[i].r * Math.pow(13, 4-i);
-                return R_FLUSH + score; // Simple score, technically could overlap straight but ranges separate
+                return R_FLUSH + score;
             }
-
-            // 5. Straight
             const straightHigh = getStraightHigh(cards);
             if (straightHigh !== -1) return R_STRAIGHT + straightHigh;
-
-            // 6. Trips
             if (trips.length > 0) {
                 const t = trips[0];
                 let k1 = -1, k2 = -1;
-                for(let c of cards) {
-                    if(c.r !== t) {
-                        if(k1 === -1) k1 = c.r;
-                        else if(k2 === -1) { k2 = c.r; break; }
-                    }
-                }
+                for(let c of cards) { if(c.r !== t) { if(k1 === -1) k1 = c.r; else if(k2 === -1) { k2 = c.r; break; } } }
                 return R_TRIPS + (t * 200) + (k1 * 14) + k2;
             }
-
-            // 7. Two Pair
             if (pairs.length >= 2) {
-                const p1 = pairs[0];
-                const p2 = pairs[1];
+                const p1 = pairs[0], p2 = pairs[1];
                 let k = -1;
                 for(let c of cards) if(c.r !== p1 && c.r !== p2) { k = c.r; break; }
                 return R_TWO_PAIR + (p1 * 200) + (p2 * 14) + k;
             }
-
-            // 8. Pair
             if (pairs.length > 0) {
                 const p = pairs[0];
                 let kickers = [];
                 for(let c of cards) if(c.r !== p) kickers.push(c.r);
-                // Top 3 kickers
                 let kScore = kickers[0]*200 + kickers[1]*14 + kickers[2];
                 return R_PAIR + (p * 4000) + kScore;
             }
-
-            // 9. High Card
             let score = 0;
             for(let i=0; i<5; i++) score += cards[i].r * Math.pow(13, 4-i);
             return R_HIGH_CARD + score;
         }
 
-        // --- Monte Carlo Simulation ---
         function runSimulation() {
             const myCards = state.hole.filter(c => c !== null);
-            if (myCards.length < 2) return null; // Need 2 hole cards
-            
+            if (myCards.length < 2) return null;
             const boardCards = state.board.filter(c => c !== null);
             
-            // Build Deck (Remove known cards)
             let deck = [];
             const known = new Set([...myCards, ...boardCards].map(c => `${c.r},${c.s}`));
-            
             for(let r=0; r<13; r++) {
                 for(let s=0; s<4; s++) {
                     if(!known.has(`${r},${s}`)) deck.push({r, s});
                 }
             }
 
-            let wins = 0;
-            let ties = 0;
-            const ITERATIONS = 3000; // Fast enough for JS
-
+            let wins = 0; let ties = 0; const ITERATIONS = 3000;
             for(let i=0; i<ITERATIONS; i++) {
-                // Fisher-Yates Shuffle (Partial)
-                // We need cards for Board (5 - current) + Opponents (2 * count)
                 const needed = (5 - boardCards.length) + (state.opponents * 2);
-                if (deck.length < needed) break; // Should not happen
-
-                // Shuffle only what we need for speed
-                // Copy deck? No, too slow. Just swap from end.
-                // Actually for 3000 iters, full shuffle of a temp array is ok-ish,
-                // but swapping is faster.
-                // Optimization: We can reuse the deck array but we need to restore it? 
-                // Easier to make a copy for the run? No, just pick random indices.
-                
-                // Let's create a temp deck for this iteration (fastest valid way without complexity)
+                if (deck.length < needed) break;
                 let tempDeck = [...deck];
                 let drawn = [];
-                
                 for(let k=0; k<needed; k++) {
                     const idx = Math.floor(Math.random() * tempDeck.length);
                     drawn.push(tempDeck[idx]);
-                    tempDeck[idx] = tempDeck[tempDeck.length-1]; // Swap remove
+                    tempDeck[idx] = tempDeck[tempDeck.length-1];
                     tempDeck.pop();
                 }
-
-                // Deal
                 let dealIdx = 0;
-                
-                // Complete Board
                 let simBoard = [...boardCards];
-                while(simBoard.length < 5) {
-                    simBoard.push(drawn[dealIdx++]);
-                }
-
-                // Evaluate My Hand
+                while(simBoard.length < 5) simBoard.push(drawn[dealIdx++]);
                 const myScore = evaluate7Cards([...myCards, ...simBoard]);
-
-                // Evaluate Opponents
-                let lost = false;
-                let tied = false;
-                
+                let lost = false; let tied = false;
                 for(let o=0; o<state.opponents; o++) {
                     const oppHand = [drawn[dealIdx++], drawn[dealIdx++]];
                     const oppScore = evaluate7Cards([...oppHand, ...simBoard]);
-                    
-                    if (oppScore > myScore) {
-                        lost = true;
-                        break;
-                    } else if (oppScore === myScore) {
-                        tied = true;
-                    }
+                    if (oppScore > myScore) { lost = true; break; }
+                    else if (oppScore === myScore) tied = true;
                 }
-
-                if (!lost) {
-                    if (tied) ties++;
-                    else wins++;
-                }
+                if (!lost) { if (tied) ties++; else wins++; }
             }
-
             return { wins, ties, total: ITERATIONS };
         }
 
+        // --- UI ---
 
-        // --- UI Functions ---
+        function renderPicker() {
+            const container = document.getElementById('picker-container');
+            container.innerHTML = '';
 
-        function initPicker() {
-            const grid = document.getElementById('picker-grid');
-            grid.innerHTML = '';
-            
-            // Generate Grid: Ranks as Rows is better on mobile? Or Suits?
-            // Let's do Suits as Rows or 4 blocks.
-            // Standard: 4 Rows (Suits), 13 Cols (Ranks)
-            
-            SUITS.forEach((suit, sIdx) => {
-                RANKS.forEach((rank, rIdx) => {
-                    const el = document.createElement('div');
-                    el.className = `picker-card suit-${suit}`;
-                    el.innerHTML = `<span>${rank}</span><span style="font-size:1.2em">${SYMBOLS[suit]}</span>`;
-                    el.onclick = () => pickCard(rIdx, sIdx);
-                    el.id = `card-${rIdx}-${sIdx}`;
-                    grid.appendChild(el);
+            if (state.tempSuit === null) {
+                // Show Suit Picker
+                const grid = document.createElement('div');
+                grid.className = 'suit-grid';
+                SUITS.forEach((suit, idx) => {
+                    const btn = document.createElement('div');
+                    btn.className = `suit-btn suit-${suit}`;
+                    btn.innerHTML = SYMBOLS[suit];
+                    btn.onclick = () => {
+                        state.tempSuit = idx;
+                        renderPicker();
+                    };
+                    grid.appendChild(btn);
                 });
-            });
+                container.appendChild(grid);
+            } else {
+                // Show Rank Picker
+                // Header to go back
+                const header = document.createElement('div');
+                header.className = 'rank-header';
+                
+                const suitChar = SUITS[state.tempSuit];
+                header.innerHTML = `
+                    <div class="flex items-center gap-2 text-xl font-bold">
+                        <span class="text-white">Select Rank for:</span>
+                        <span class="suit-${suitChar} bg-white px-2 rounded">${SYMBOLS[suitChar]}</span>
+                    </div>
+                    <button onclick="cancelSuit()" class="bg-gray-600 text-xs px-2 py-1 rounded">CANCEL</button>
+                `;
+                container.appendChild(header);
+
+                // Used cards check
+                const usedRanks = new Set();
+                [...state.hole, ...state.board].forEach(c => {
+                    if(c && c.s === state.tempSuit) usedRanks.add(c.r);
+                });
+
+                const grid = document.createElement('div');
+                grid.className = 'rank-grid';
+                // Adjust grid height: container h - header h (30) - gap
+                grid.style.height = 'calc(100% - 34px)';
+
+                RANKS.forEach((rank, rIdx) => {
+                    const btn = document.createElement('div');
+                    const isUsed = usedRanks.has(rIdx);
+                    btn.className = `rank-btn suit-${suitChar} ${isUsed ? 'disabled' : ''}`;
+                    btn.innerHTML = rank;
+                    btn.onclick = () => pickRank(rIdx);
+                    grid.appendChild(btn);
+                });
+                container.appendChild(grid);
+            }
+        }
+
+        function cancelSuit() {
+            state.tempSuit = null;
+            renderPicker();
+        }
+
+        function pickRank(rIdx) {
+            if (!state.currentSlot || state.tempSuit === null) return;
+            
+            const card = {r: rIdx, s: state.tempSuit};
+            const type = state.currentSlot.split('-')[0];
+            const idx = parseInt(state.currentSlot.split('-')[1]) - 1;
+
+            if (type === 'hole') state.hole[idx] = card;
+            else state.board[idx] = card;
+
+            // Reset logic
+            state.tempSuit = null;
+            clearResults();
+            advanceSlot();
+            renderSlots();
+            renderPicker();
+            
+            if (state.hole[0] && state.hole[1]) setTimeout(calculate, 20);
         }
 
         function renderSlots() {
-            // Hole
             state.hole.forEach((c, i) => updateSlotUI(`hole-${i+1}`, c));
-            // Board
             state.board.forEach((c, i) => updateSlotUI(`board-${i+1}`, c));
 
-            // Highlight Active
             document.querySelectorAll('.card-slot').forEach(el => el.classList.remove('active'));
             if(state.currentSlot) {
                 document.getElementById(state.currentSlot).classList.add('active');
             }
-
-            // Disable picked cards in grid
-            const used = new Set();
-            [...state.hole, ...state.board].forEach(c => {
-                if(c) used.add(`${c.r}-${c.s}`);
-            });
-
-            document.querySelectorAll('.picker-card').forEach(el => {
-                const id = el.id.replace('card-', ''); // "0-0"
-                if(used.has(id)) el.classList.add('disabled');
-                else el.classList.remove('disabled');
-            });
         }
 
         function updateSlotUI(id, card) {
@@ -442,7 +449,7 @@
             if (card) {
                 const suitChar = SUITS[card.s];
                 el.className = `card-slot filled suit-${suitChar}`;
-                el.innerHTML = `<span>${RANKS[card.r]}</span><span>${SYMBOLS[suitChar]}</span>`;
+                el.innerHTML = `<span style="font-size:0.9em">${RANKS[card.r]}</span><span style="font-size:0.9em">${SYMBOLS[suitChar]}</span>`;
             } else {
                 el.className = 'card-slot';
                 el.innerHTML = '';
@@ -450,11 +457,9 @@
         }
 
         function selectSlot(id) {
-            // If tapping already selected, do nothing or toggle?
-            // If tapping filled slot, clear it?
             state.currentSlot = id;
+            state.tempSuit = null; // Reset picker to suits
             
-            // Check if user tapped a filled slot to clear it
             const type = id.split('-')[0];
             const idx = parseInt(id.split('-')[1]) - 1;
             
@@ -465,41 +470,15 @@
                 state.board[idx] = null;
                 clearResults();
             }
-
             renderSlots();
-        }
-
-        function pickCard(r, s) {
-            if (!state.currentSlot) return;
-
-            const card = {r, s};
-            const type = state.currentSlot.split('-')[0];
-            const idx = parseInt(state.currentSlot.split('-')[1]) - 1;
-
-            if (type === 'hole') state.hole[idx] = card;
-            else state.board[idx] = card;
-
-            clearResults();
-
-            // Auto advance
-            advanceSlot();
-            renderSlots();
-            
-            // Auto calc if hand is full
-            if (state.hole[0] && state.hole[1]) {
-                // Short delay to allow render
-                setTimeout(calculate, 50);
-            }
+            renderPicker();
         }
 
         function advanceSlot() {
             const order = ['hole-1', 'hole-2', 'board-1', 'board-2', 'board-3', 'board-4', 'board-5'];
             const currIdx = order.indexOf(state.currentSlot);
-            if (currIdx !== -1 && currIdx < order.length - 1) {
-                state.currentSlot = order[currIdx + 1];
-            } else {
-                state.currentSlot = null; // Done
-            }
+            if (currIdx !== -1 && currIdx < order.length - 1) state.currentSlot = order[currIdx + 1];
+            else state.currentSlot = null;
         }
 
         function changeOpponents(delta) {
@@ -516,48 +495,40 @@
             state.hole = [null, null];
             state.board = [null, null, null, null, null];
             state.currentSlot = 'hole-1';
+            state.tempSuit = null;
             clearResults();
             renderSlots();
+            renderPicker();
         }
 
         function clearResults() {
             document.getElementById('win-rate').innerText = '--%';
             document.getElementById('tie-rate').innerText = '--%';
-            document.getElementById('win-rate').className = 'text-3xl font-bold text-gray-500';
+            document.getElementById('win-rate').className = 'text-2xl font-bold text-gray-500';
         }
 
         function calculate() {
             if (!state.hole[0] || !state.hole[1]) return;
-            
             document.getElementById('loading').classList.remove('hidden');
-            
-            // Use setTimeout to allow UI to show loading state
             setTimeout(() => {
                 const res = runSimulation();
-                
                 document.getElementById('loading').classList.add('hidden');
-                
                 if (!res) return;
-                
-                const winPct = (res.wins / res.total * 100).toFixed(1);
-                const tiePct = (res.ties / res.total * 100).toFixed(1);
-                
+                const winPct = (res.wins / res.total * 100).toFixed(0);
+                const tiePct = (res.ties / res.total * 100).toFixed(0);
                 const winEl = document.getElementById('win-rate');
                 winEl.innerText = winPct + '%';
-                
-                // Color code equity
                 const fairShare = 100 / (state.opponents + 1);
-                if (parseFloat(winPct) > fairShare * 1.5) winEl.className = 'text-3xl font-bold text-green-400';
-                else if (parseFloat(winPct) < fairShare * 0.8) winEl.className = 'text-3xl font-bold text-red-400';
-                else winEl.className = 'text-3xl font-bold text-yellow-400';
-
+                if (parseFloat(winPct) > fairShare * 1.1) winEl.className = 'text-2xl font-bold text-green-400';
+                else if (parseFloat(winPct) < fairShare * 0.9) winEl.className = 'text-2xl font-bold text-red-400';
+                else winEl.className = 'text-2xl font-bold text-yellow-400';
                 document.getElementById('tie-rate').innerText = tiePct + '%';
             }, 10);
         }
 
         // Init
-        initPicker();
         renderSlots();
+        renderPicker();
 
     </script>
 </body>
